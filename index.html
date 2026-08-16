@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="ExplainBeta — Understand anything through simple language and relatable analogies. Free AI-powered explainer."/>
+<title>ExplainBeta — Understand Anything, Your Way.</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232563EB'/><path d='M16 6C12 6 9 9 9 13c0 2.5 1 4.5 2.5 6L12 20v2h8v-2l.5-1C22 17.5 23 15.5 23 13c0-4-3-7-7-7z' fill='white'/><path d='M13 22h6M14 24h4' stroke='white' stroke-width='1.5' stroke-linecap='round'/></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<!-- AI calls go through a Cloudflare Worker proxy (see worker.js) so the real Gemini API key never ships to the browser. -->
+<style>
+/* ── DESIGN TOKENS ── */
+:root{
+  --blue:#2563EB;--blue-h:#1D4ED8;--blue-l:#EFF6FF;--blue-m:#DBEAFE;
+  --text:#0F172A;--body:#334155;--muted:#475569;--faint:#94A3B8;
+  --bg:#F8FAFC;--card:#FFFFFF;--border:#E2E8F0;--border2:#CBD5E1;
+  --green:#10B981;--green-bg:#ECFDF5;--green-b:#A7F3D0;
+  --red:#EF4444;--red-bg:#FEF2F2;--red-b:#FECACA;
+  --amber:#F59E0B;--amber-l:#FEF3C7;
+  --font:'Plus Jakarta Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font);background:var(--bg);color:var(--body);
+  font-size:15px;line-height:1.6;min-height:100vh;
+  background-image:radial-gradient(#CBD5E1 1px,transparent 1px);
+  background-size:24px 24px;
+}
+
+/* ── NAV ── */
+nav{
+  position:sticky;top:0;z-index:100;height:60px;padding:0 24px;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-box{width:34px;height:34px;background:var(--blue);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 8px rgba(37,99,235,.35);flex-shrink:0}
+.logo-name{font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+.logo-name em{font-style:normal;color:var(--blue)}
+.nav-tag{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--blue);background:var(--blue-l);border:1px solid var(--blue-m);
+  padding:3px 10px;border-radius:100px}
+
+/* ── PAGE ── */
+.page{max-width:680px;margin:0 auto;padding:52px 20px 80px}
+
+/* ── HERO ── */
+.hero{text-align:center;margin-bottom:44px}
+.badge{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
+  color:var(--blue);background:var(--blue-l);border:1px solid var(--blue-m);
+  padding:6px 14px;border-radius:100px;margin-bottom:20px}
+.dot{width:7px;height:7px;background:var(--green);border-radius:50%;
+  animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+h1{font-size:clamp(28px,5vw,48px);font-weight:800;color:var(--text);
+  line-height:1.12;letter-spacing:-.03em;margin-bottom:14px}
+h1 mark{background:linear-gradient(135deg,var(--blue),#60A5FA);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:16px;color:var(--muted);max-width:460px;margin:0 auto 24px;line-height:1.75}
+.stats{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap}
+.stat{font-size:13px;font-weight:500;color:var(--muted)}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;
+  box-shadow:0 4px 16px rgba(0,0,0,.08);padding:28px;margin-bottom:16px}
+.card-label{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--faint);margin-bottom:18px}
+
+/* ── FORM ── */
+label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:7px}
+.hint{font-weight:400;color:var(--faint);font-size:12px;margin-left:4px}
+textarea{width:100%;min-height:148px;background:var(--bg);color:var(--text);
+  border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;
+  font-family:var(--font);font-size:14.5px;line-height:1.75;resize:vertical;outline:none;
+  transition:border-color .2s,box-shadow .2s}
+textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);background:#fff}
+textarea::placeholder{color:var(--faint)}
+.char-row{display:flex;justify-content:flex-end;margin-top:5px}
+.char{font-size:12px;color:var(--faint);transition:color .2s}
+.char.warn{color:var(--red)}
+
+/* ── SELECTS ── */
+.selects-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+.sel-wrap{display:flex;flex-direction:column}
+select{background:var(--bg);color:var(--text);border:1.5px solid var(--border);
+  border-radius:12px;padding:11px 36px 11px 14px;font-family:var(--font);
+  font-size:14px;font-weight:500;outline:none;cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  transition:border-color .2s,box-shadow .2s}
+select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);background:#fff}
+
+/* ── FORMAT TOGGLE ── */
+.format-row{margin-top:14px}
+.format-toggle{display:flex;align-items:center;gap:10px;background:var(--bg);
+  border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;
+  cursor:pointer;transition:border-color .2s;width:100%}
+.format-toggle:hover{border-color:var(--blue)}
+.format-toggle input[type=checkbox]{width:16px;height:16px;
+  accent-color:var(--blue);cursor:pointer;flex-shrink:0}
+.format-toggle-label{font-size:13px;font-weight:600;color:var(--text);
+  cursor:pointer;user-select:none}
+.format-toggle-sub{font-size:11px;color:var(--faint);margin-left:auto}
+
+/* ── MAIN BUTTON ── */
+#explainBtn{width:100%;margin-top:20px;padding:15px 24px;background:var(--blue);
+  color:#fff;font-family:var(--font);font-size:16px;font-weight:700;border:none;
+  border-radius:12px;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;gap:10px;
+  transition:background .2s,transform .15s,box-shadow .2s;
+  box-shadow:0 2px 10px rgba(37,99,235,.35)}
+#explainBtn:hover:not(:disabled){background:var(--blue-h);transform:translateY(-1px);
+  box-shadow:0 6px 20px rgba(37,99,235,.4)}
+#explainBtn:active:not(:disabled){transform:translateY(0)}
+#explainBtn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.spinner{width:17px;height:17px;border:2.5px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;
+  display:none;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.kbd{text-align:center;font-size:12px;color:var(--faint);margin-top:10px}
+kbd{font-family:var(--font);font-size:11px;background:var(--bg);
+  border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--muted)}
+
+/* ── ERROR ── */
+.err{display:none;background:var(--red-bg);border:1px solid var(--red-b);
+  border-radius:8px;padding:13px 16px;color:#B91C1C;font-size:13.5px;
+  line-height:1.65;margin-top:12px;white-space:pre-line}
+
+/* ── STREAM BOX ── */
+#streamBox{display:none;border:1px solid var(--blue-m);background:var(--blue-l);
+  border-radius:12px;padding:18px;margin-top:14px}
+.stream-lbl{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--blue);margin-bottom:10px}
+#streamText{font-size:15px;line-height:1.9;color:var(--body);white-space:pre-wrap}
+
+/* ── OUTPUT CARD ── */
+#outputCard{display:none;animation:rise .35s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.out-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+  padding-bottom:18px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.out-title{font-size:15px;font-weight:700;color:var(--text)}
+.out-meta{font-size:12px;color:var(--faint);margin-top:3px}
+.pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pill{font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:100px;
+  background:var(--blue-l);color:var(--blue);border:1px solid var(--blue-m)}
+#outputText{font-size:15px;line-height:1.9;color:var(--body);white-space:pre-wrap}
+.actions{display:flex;gap:8px;margin-top:20px;padding-top:18px;
+  border-top:1px solid var(--border);flex-wrap:wrap}
+.act{display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--bg);
+  border:1.5px solid var(--border);border-radius:8px;color:var(--muted);
+  font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .18s}
+.act:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-l)}
+.act.ok{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+
+/* ── SCENE PLAYER ── */
+#scenePlayer{display:none}
+.scene-progress{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.scene-counter{font-size:12px;font-weight:600;color:var(--muted)}
+.scene-bar{flex:1;height:4px;background:var(--border);border-radius:2px;margin:0 12px;overflow:hidden}
+.scene-bar-fill{height:100%;background:var(--blue);border-radius:2px;transition:width .4s ease}
+.scene-wrap{position:relative;min-height:240px}
+.scene{display:none;animation:sceneIn .7s cubic-bezier(.16,1,.3,1) forwards}
+.scene.active{display:block}
+.scene.leaving{display:block;position:absolute;inset:0;animation:sceneOut .35s cubic-bezier(.4,0,1,1) forwards;pointer-events:none}
+@keyframes sceneIn{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes sceneOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-10px) scale(.98)}}
+@media(prefers-reduced-motion:reduce){
+  .scene,.scene.leaving,.draw,.draw-fill,.float-up,.pulse-ring,.bounce-in,.blink,.count-fill,
+  .world-camera,.world-pan,.world-entity,.world-active,.world-flow,.world-loop,.world-bell{animation:none!important;opacity:1!important;stroke-dashoffset:0!important;transform:none!important}
+}
+
+/* SVG illustration canvas */
+.scene-svg-wrap{width:100%;border-radius:12px;overflow:hidden;
+  background:var(--blue-l);border:1px solid var(--blue-m);
+  margin-bottom:16px;padding:10px 0 6px;
+  display:flex;align-items:center;justify-content:center;min-height:180px}
+.scene-svg-wrap svg{display:block;overflow:visible}
+
+/* SVG draw-on animation */
+.draw{fill:none;stroke-dasharray:var(--len,600);stroke-dashoffset:var(--len,600);
+  animation:drawLine var(--dur,1.2s) cubic-bezier(.4,0,.2,1) var(--delay,0s) forwards}
+.draw-fill{opacity:0;animation:fillIn var(--fdur,.5s) ease var(--fdelay,.8s) forwards}
+.float-up{animation:floatUp var(--fdur,.6s) cubic-bezier(.16,1,.3,1) var(--fdelay,0s) forwards;opacity:0}
+@keyframes drawLine{to{stroke-dashoffset:0}}
+@keyframes fillIn{from{opacity:0}to{opacity:1}}
+@keyframes floatUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.pulse-ring{animation:pulseRing 2s ease-in-out var(--delay,.5s) infinite;transform-origin:center}
+@keyframes pulseRing{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.1);opacity:.15}}
+.bounce-in{animation:bounceIn .7s cubic-bezier(.36,.07,.19,.97) var(--delay,0s) both}
+@keyframes bounceIn{0%{transform:translateY(20px);opacity:0}60%{transform:translateY(-8px);opacity:1}80%{transform:translateY(3px)}100%{transform:translateY(0)}}
+.blink{animation:blink .9s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.count-fill{transform:scaleX(0);transform-origin:left center;
+  animation:countFill var(--dur,1.4s) ease var(--delay,.5s) forwards}
+@keyframes countFill{to{transform:scaleX(1)}}
+.world-camera{transform-origin:center;animation:cameraFocus 7s cubic-bezier(.22,1,.36,1) infinite alternate}
+.world-pan{transform-origin:center;animation:worldPan 6s cubic-bezier(.22,1,.36,1) infinite alternate}
+.world-entity{opacity:0;transform-origin:center;
+  animation:entityIn .75s cubic-bezier(.22,1,.36,1) var(--delay,0s) forwards}
+.world-active{filter:drop-shadow(0 3px 7px rgba(37,99,235,.28));
+  animation:activeGlow 2.4s cubic-bezier(.45,0,.2,1) var(--delay,.8s) infinite}
+.world-flow{stroke-dasharray:6 8;stroke-dashoffset:80;
+  animation:flowMove 2.8s cubic-bezier(.45,0,.2,1) var(--delay,.5s) infinite}
+.world-loop{animation:loopPulse 2.4s cubic-bezier(.45,0,.2,1) var(--delay,.6s) infinite;transform-origin:center}
+.world-bell{animation:bellSwing 2.2s cubic-bezier(.45,0,.2,1) var(--delay,1s) infinite;transform-origin:top center}
+@keyframes cameraFocus{0%{transform:translateX(-3px) scale(1)}100%{transform:translateX(3px) scale(1.025)}}
+@keyframes worldPan{0%{transform:translateY(1px)}100%{transform:translateY(-3px)}}
+@keyframes entityIn{from{opacity:0;transform:translateY(12px) scale(.92)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes activeGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes flowMove{to{stroke-dashoffset:0}}
+@keyframes loopPulse{0%,100%{opacity:.45;transform:scale(1)}50%{opacity:.95;transform:scale(1.08)}}
+@keyframes bellSwing{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(5deg)}}
+
+/* Scene text */
+.scene-step{font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--blue);margin-bottom:5px}
+.scene-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.3}
+.scene-text{font-size:14px;color:var(--body);line-height:1.85}
+.scene-hint{margin-top:10px;padding:9px 13px;background:var(--blue-l);
+  border:1px solid var(--blue-m);border-radius:8px;font-size:12.5px;
+  color:var(--blue);font-style:italic;line-height:1.6}
+
+/* Scene controls */
+.scene-controls{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
+  margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+.sc-btn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;
+  border-radius:8px;border:1.5px solid var(--border);background:var(--bg);
+  color:var(--muted);font-size:15px;cursor:pointer;transition:all .18s;flex-shrink:0}
+.sc-btn:hover:not(:disabled){border-color:var(--blue);color:var(--blue);background:var(--blue-l)}
+.sc-btn:disabled{opacity:.35;cursor:not-allowed}
+.sc-btn.play-pause{width:44px;height:44px;background:var(--blue);color:#fff;
+  border-color:var(--blue);font-size:17px}
+.sc-btn.play-pause:hover{background:var(--blue-h);border-color:var(--blue-h)}
+.scene-audio-select{height:38px;min-width:150px;border-radius:8px;border:1.5px solid var(--border);
+  background-color:var(--bg);color:var(--muted);font-family:var(--font);
+  font-size:12px;font-weight:600;padding:8px 30px 8px 10px}
+
+/* ── PRESENTATION / FOCUS MODE ── */
+.sc-btn#scFocus{font-size:17px}
+.focus-overlay{
+  display:none;position:fixed;inset:0;z-index:1000;background:#0B1220;
+  flex-direction:column;
+}
+.focus-overlay.active{display:flex}
+.focus-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 22px;flex-shrink:0;
+}
+.focus-badge{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;
+  color:#93C5FD;background:rgba(37,99,235,.16);border:1px solid rgba(96,165,250,.3);
+  padding:6px 14px;border-radius:100px}
+.focus-exit{
+  font-family:var(--font);font-size:13px;font-weight:700;color:#E2E8F0;
+  background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.16);
+  border-radius:10px;padding:9px 16px;cursor:pointer;transition:all .18s;
+}
+.focus-exit:hover{background:rgba(239,68,68,.18);border-color:rgba(248,113,113,.4);color:#FCA5A5}
+.focus-stage{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  max-width:920px;width:100%;margin:0 auto;padding:0 32px 40px;
+  overflow-y:auto;min-height:0;
+}
+.focus-progress{margin-bottom:22px}
+.focus-progress .scene-counter{color:#93C5FD}
+.focus-progress .scene-bar{background:rgba(255,255,255,.12)}
+.focus-scene-wrap{min-height:0}
+.focus-scene-wrap .scene-svg-wrap{
+  min-height:min(46vh,420px);background:rgba(37,99,235,.12);
+  border-color:rgba(96,165,250,.25);margin-bottom:26px;
+}
+.focus-scene-wrap .scene-svg-wrap svg{width:min(560px,88vw);height:auto}
+.focus-scene-wrap .scene-step{color:#93C5FD;font-size:12px}
+.focus-scene-wrap .scene-title{color:#F8FAFC;font-size:clamp(20px,3.4vw,32px);margin-bottom:14px}
+.focus-scene-wrap .scene-text{color:#CBD5E1;font-size:clamp(15px,2vw,19px);line-height:1.8}
+.focus-scene-wrap .scene-hint{background:rgba(37,99,235,.14);border-color:rgba(96,165,250,.28);color:#93C5FD}
+.focus-stage .scene-controls{border-top-color:rgba(255,255,255,.1)}
+.focus-stage .sc-btn{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.16);color:#CBD5E1}
+.focus-stage .sc-btn:hover:not(:disabled){background:rgba(96,165,250,.16);border-color:#60A5FA;color:#93C5FD}
+.focus-stage .sc-btn.play-pause{background:var(--blue);border-color:var(--blue);color:#fff}
+.focus-stage .scene-audio-select{background-color:rgba(255,255,255,.06);border-color:rgba(255,255,255,.16);color:#CBD5E1}
+body.focus-locked{overflow:hidden}
+@media(max-width:640px){
+  .focus-topbar{padding:12px 16px}
+  .focus-stage{padding:0 16px 24px}
+  .focus-scene-wrap .scene-svg-wrap{min-height:36vh}
+}
+
+/* ── FEATURES ── */
+.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:40px}
+.feat{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:18px 16px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.06);
+  transition:box-shadow .2s,transform .2s}
+.feat:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px)}
+.feat-icon{font-size:24px;margin-bottom:10px;display:block}
+.feat-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px}
+.feat-desc{font-size:12px;color:var(--faint);line-height:1.55}
+
+footer{text-align:center;margin-top:48px;padding-top:22px;
+  border-top:1px solid var(--border);font-size:12.5px;color:var(--faint);line-height:1.8}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .page{padding:32px 16px 60px}.card{padding:20px}h1{font-size:26px}
+  .selects-grid{grid-template-columns:1fr}.feats{grid-template-columns:1fr}
+  .out-head{flex-direction:column}.pills{justify-content:flex-start}
+  .actions{gap:6px}.act{flex:1;justify-content:center;font-size:12px}
+  nav{padding:0 16px}.nav-tag{display:none}
+  .scene-svg-wrap{min-height:150px}
+}
+@media(max-width:380px){h1{font-size:22px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="#">
+    <div class="logo-box">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M12 3C8.7 3 6 5.7 6 9c0 2.2.9 4.1 2.3 5.5L9 15.5V18h6v-2.5l.7-.7C17.1 13.4 18 11.4 18 9c0-3.3-2.7-6-6-6z" fill="white" opacity=".92"/>
+        <path d="M9 18h6M10.5 20.5h3" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="logo-name">Explain<em>Beta</em></span>
+  </a>
+  <span class="nav-tag">Free · AI-Powered</span>
+</nav>
+
+<main class="page">
+  <section class="hero">
+    <div class="badge"><span class="dot"></span>Powered by AI · No limits · Free</div>
+    <h1>Understand <mark>anything</mark>,<br>your way.</h1>
+    <p class="hero-sub">Paste any concept, code, article, or topic you find confusing. Pick your level and analogy style. Get a crystal-clear explanation instantly.</p>
+    <div class="stats">
+      <span class="stat">⚡ Instant results</span>
+      <span class="stat">🎯 Your learning level</span>
+      <span class="stat">🔓 Always free</span>
+    </div>
+  </section>
+
+  <div class="card">
+    <p class="card-label">What do you want to understand?</p>
+    <label for="topicInput">Paste your text, code, or question<span class="hint">— anything works</span></label>
+    <textarea id="topicInput" maxlength="3000"
+      placeholder="e.g. 'What is async/await in JavaScript?' or paste a confusing paragraph, piece of code, maths concept, business term..."></textarea>
+    <div class="char-row"><span class="char" id="charEl">0 / 3000</span></div>
+
+    <div class="selects-grid">
+      <div class="sel-wrap">
+        <label for="levelEl">Explanation level</label>
+        <select id="levelEl">
+          <option value="5yo">🧒 5-Year-Old</option>
+          <option value="10yo">👦 10-Year-Old</option>
+          <option value="beginner" selected>🌱 Complete Beginner</option>
+          <option value="intermediate">📈 Intermediate</option>
+        </select>
+      </div>
+      <div class="sel-wrap">
+        <label for="analogyEl">Analogy style</label>
+        <select id="analogyEl">
+          <option value="none">💬 Plain Language</option>
+          <option value="house" selected>🏠 House / Building</option>
+          <option value="football">⚽ Football / Sports</option>
+          <option value="gaming">🎮 Video Games</option>
+          <option value="school">🏫 School / Class</option>
+          <option value="cooking">🍳 Cooking / Kitchen</option>
+          <option value="life">🌍 Real Life</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="format-row">
+      <label class="format-toggle" for="animToggle">
+        <input type="checkbox" id="animToggle"/>
+        <span class="format-toggle-label">🎬 Animated Scene Mode</span>
+        <span class="format-toggle-sub">Step-by-step with illustrations</span>
+      </label>
+    </div>
+
+    <button id="explainBtn">
+      <span id="btnTxt">✦ Explain It</span>
+      <div class="spinner" id="spinnerEl"></div>
+    </button>
+    <p class="kbd">Press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to submit</p>
+
+    <div id="streamBox">
+      <div class="stream-lbl">Explaining...</div>
+      <div id="streamText"></div>
+    </div>
+    <div class="err" id="errEl"></div>
+  </div>
+
+  <div class="card" id="outputCard">
+    <div class="out-head">
+      <div>
+        <div class="out-title">✦ Your Explanation</div>
+        <div class="out-meta" id="metaEl">Tailored just for you</div>
+      </div>
+      <div class="pills" id="pillsEl"></div>
+    </div>
+
+    <!-- Standard text output -->
+    <div id="outputText"></div>
+
+    <!-- Animated scene player (shown only in animated mode) -->
+    <div id="scenePlayer">
+      <div class="scene-progress">
+        <span class="scene-counter" id="sceneCounter">Scene 1 of 1</span>
+        <div class="scene-bar"><div class="scene-bar-fill" id="sceneBarFill" style="width:100%"></div></div>
+      </div>
+      <div class="scene-wrap" id="sceneWrap"></div>
+      <div class="scene-controls">
+        <button class="sc-btn" id="scPrev" title="Previous">⏮</button>
+        <button class="sc-btn play-pause" id="scPlay" title="Play/Pause">⏸</button>
+        <button class="sc-btn" id="scNext" title="Next">⏭</button>
+        <select class="scene-audio-select" id="audioMode" title="Audio mode">
+          <option value="off">Audio Off</option>
+          <option value="narration">Narration Only</option>
+          <option value="effects">Effects Only</option>
+          <option value="both">Narration + Effects</option>
+        </select>
+        <button class="sc-btn" id="scFocus" title="Presentation mode — fullscreen, no distractions">⛶</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="act" id="copyBtn">📋 Copy</button>
+      <button class="act" id="againBtn">🔄 Try Again</button>
+      <button class="act" id="clearBtn">✕ New</button>
+    </div>
+  </div>
+
+  <!-- ── PRESENTATION / FOCUS MODE OVERLAY ──
+       Full-viewport, distraction-free version of the scene player. A teacher
+       (or anyone presenting) can hand the class this view — just the
+       animation and its controls, nothing else. Works even where the real
+       Fullscreen API is blocked (e.g. iOS Safari) since it's a fixed overlay
+       with its own escape hatch, not a hard dependency on requestFullscreen. -->
+  <div id="focusOverlay" class="focus-overlay" aria-hidden="true">
+    <div class="focus-topbar">
+      <span class="focus-badge"><span class="dot"></span>Presentation Mode</span>
+      <button class="focus-exit" id="focusExit" title="Exit presentation mode (Esc)">✕ Exit</button>
+    </div>
+    <div class="focus-stage">
+      <div class="scene-progress focus-progress">
+        <span class="scene-counter" id="focusCounter">Scene 1 of 1</span>
+        <div class="scene-bar"><div class="scene-bar-fill" id="focusBarFill" style="width:100%"></div></div>
+      </div>
+      <div class="scene-wrap focus-scene-wrap" id="focusWrap"></div>
+      <div class="scene-controls">
+        <button class="sc-btn" id="focusPrev" title="Previous">⏮</button>
+        <button class="sc-btn play-pause" id="focusPlay" title="Play/Pause">⏸</button>
+        <button class="sc-btn" id="focusNext" title="Next">⏭</button>
+        <select class="scene-audio-select" id="focusAudioMode" title="Audio mode">
+          <option value="off">Audio Off</option>
+          <option value="narration">Narration Only</option>
+          <option value="effects">Effects Only</option>
+          <option value="both">Narration + Effects</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="feats">
+    <div class="feat"><span class="feat-icon">🎯</span><div class="feat-title">Your Level</div><div class="feat-desc">From 5-year-old to intermediate</div></div>
+    <div class="feat"><span class="feat-icon">🔗</span><div class="feat-title">Your Analogies</div><div class="feat-desc">Football, cooking, gaming — whatever clicks</div></div>
+    <div class="feat"><span class="feat-icon">🎬</span><div class="feat-title">Animated Mode</div><div class="feat-desc">Step-by-step scenes with live SVG illustrations</div></div>
+  </div>
+
+  <footer><strong style="color:var(--muted)">ExplainBeta</strong> · Understand Anything, Your Way.<br>Powered by Gemini</footer>
+</main>
+
+<script>
+'use strict';
+
+// ── PROMPT DATA ──────────────────────────────────────────────────────────────
+var LEVELS = {
+  '5yo':          'a 5-year-old child — use the simplest possible words, very short sentences, be playful',
+  '10yo':         'a curious 10-year-old — be fun and energetic, no adult jargon',
+  'beginner':     'a complete beginner with zero background — be warm and encouraging, never assume prior knowledge',
+  'intermediate': 'someone with some basic knowledge who wants to go deeper — be clear and skip unnecessary jargon'
+};
+
+var ANALOGIES = {
+  'none':     'Use plain clear language.',
+  'house':    'Use house and building analogies throughout: rooms, walls, doors, floors, furniture, blueprints.',
+  'football': 'Use football (soccer) analogies throughout: players, positions, tactics, goals, the referee.',
+  'gaming':   'Use video game analogies throughout: levels, health bars, inventory, respawn, save files, boss fights.',
+  'school':   'Use school analogies throughout: teachers, students, classrooms, homework, exams.',
+  'cooking':  'Use cooking analogies throughout: ingredients, recipes, steps, heat, the final dish.',
+  'life':     'Use everyday real life analogies: routines, shopping, commuting, social situations.'
+};
+
+var LEVEL_LABELS   = {'5yo':'🧒 5-Year-Old','10yo':'👦 10-Year-Old','beginner':'🌱 Beginner','intermediate':'📈 Intermediate'};
+var ANALOGY_LABELS = {'none':'💬 Plain','house':'🏠 House','football':'⚽ Football','gaming':'🎮 Gaming','school':'🏫 School','cooking':'🍳 Cooking','life':'🌍 Real Life'};
+
+// ── DOM ──────────────────────────────────────────────────────────────────────
+var el = {
+  topic:   document.getElementById('topicInput'),
+  level:   document.getElementById('levelEl'),
+  analogy: document.getElementById('analogyEl'),
+  anim:    document.getElementById('animToggle'),
+  btn:     document.getElementById('explainBtn'),
+  btnTxt:  document.getElementById('btnTxt'),
+  spin:    document.getElementById('spinnerEl'),
+  char:    document.getElementById('charEl'),
+  err:     document.getElementById('errEl'),
+  stream:  document.getElementById('streamBox'),
+  streamT: document.getElementById('streamText'),
+  out:     document.getElementById('outputCard'),
+  outTxt:  document.getElementById('outputText'),
+  meta:    document.getElementById('metaEl'),
+  pills:   document.getElementById('pillsEl'),
+  player:  document.getElementById('scenePlayer'),
+  wrap:    document.getElementById('sceneWrap'),
+  counter: document.getElementById('sceneCounter'),
+  bar:     document.getElementById('sceneBarFill'),
+  copy:    document.getElementById('copyBtn'),
+  again:   document.getElementById('againBtn'),
+  clear:   document.getElementById('clearBtn'),
+  prev:    document.getElementById('scPrev'),
+  play:    document.getElementById('scPlay'),
+  next:    document.getElementById('scNext'),
+  audio:   document.getElementById('audioMode'),
+  scFocus:      document.getElementById('scFocus'),
+  focusOverlay: document.getElementById('focusOverlay'),
+  focusWrap:    document.getElementById('focusWrap'),
+  focusCounter: document.getElementById('focusCounter'),
+  focusBar:     document.getElementById('focusBarFill'),
+  focusPrev:    document.getElementById('focusPrev'),
+  focusPlay:    document.getElementById('focusPlay'),
+  focusNext:    document.getElementById('focusNext'),
+  focusAudio:   document.getElementById('focusAudioMode'),
+  focusExit:    document.getElementById('focusExit')
+};
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  el.topic.addEventListener('input', function() {
+    var n = this.value.length;
+    el.char.textContent = n + ' / 3000';
+    el.char.className = 'char' + (n > 2700 ? ' warn' : '');
+  });
+  el.btn.addEventListener('click', explainIt);
+  el.copy.addEventListener('click', copyText);
+  el.again.addEventListener('click', explainIt);
+  el.clear.addEventListener('click', clearAll);
+  el.prev.addEventListener('click', function() { sceneGo(SC.cur - 1); });
+  el.next.addEventListener('click', function() { sceneGo(SC.cur + 1); });
+  el.play.addEventListener('click', sceneTogglePlay);
+  el.audio.addEventListener('change', function() { syncAudioSelects(el.audio.value); sceneAudioChanged(); });
+
+  // Presentation/focus mode controls mirror the inline ones exactly —
+  // same handlers, so state (scene index, play/pause, audio mode) never drifts.
+  el.focusPrev.addEventListener('click', function() { sceneGo(SC.cur - 1); });
+  el.focusNext.addEventListener('click', function() { sceneGo(SC.cur + 1); });
+  el.focusPlay.addEventListener('click', sceneTogglePlay);
+  el.focusAudio.addEventListener('change', function() { syncAudioSelects(el.focusAudio.value); sceneAudioChanged(); });
+  el.scFocus.addEventListener('click', enterFocusMode);
+  el.focusExit.addEventListener('click', exitFocusMode);
+
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') explainIt();
+    if (e.key === 'Escape' && el.focusOverlay.classList.contains('active')) exitFocusMode();
+    if (el.focusOverlay.classList.contains('active')) {
+      if (e.key === 'ArrowRight') sceneGo(SC.cur + 1);
+      if (e.key === 'ArrowLeft')  sceneGo(SC.cur - 1);
+      if (e.key === ' ')          { e.preventDefault(); sceneTogglePlay(); }
+    }
+  });
+  // If the user exits native fullscreen via the browser's own UI (not our
+  // button), keep our overlay state in sync rather than leaving a fullscreen
+  // API mismatch with the still-open overlay.
+  document.addEventListener('fullscreenchange', function() {
+    if (!document.fullscreenElement && el.focusOverlay.classList.contains('active')) {
+      exitFocusMode();
+    }
+  });
+});
+
+function syncAudioSelects(value) {
+  el.audio.value = value;
+  el.focusAudio.value = value;
+}
+
+function enterFocusMode() {
+  if (!SC.scenes.length) return;
+  playEffect('click');
+  el.focusOverlay.classList.add('active');
+  el.focusOverlay.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('focus-locked');
+  sceneRender(); // repaint into the now-visible focus wrap
+  // sceneRender() bumps SC.renderId, which invalidates any auto-advance
+  // timer that was already scheduled — without this, the story silently
+  // freezes on whatever scene was showing when focus mode opened.
+  if (SC.playing) sceneAutoPlay();
+}
+
+function exitFocusMode() {
+  el.focusOverlay.classList.remove('active');
+  el.focusOverlay.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('focus-locked');
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(function() {});
+  }
+}
+
+// ── EXPLAIN ──────────────────────────────────────────────────────────────────
+function explainIt() {
+  var topic   = el.topic.value.trim();
+  var level   = el.level.value;
+  var analogy = el.analogy.value;
+  var isAnim  = el.anim.checked;
+
+  if (!topic) { showErr('Please paste or type something to explain first.'); el.topic.focus(); return; }
+  if (topic.length > 3000) { showErr('Text is too long. Max 3000 characters.'); return; }
+
+  exitFocusMode();
+  sceneStop();
+  setLoading(true);
+  hideErr();
+  el.out.style.display    = 'none';
+  el.stream.style.display = 'block';
+  el.streamT.textContent  = '';
+  setTimeout(function() { el.stream.scrollIntoView({ behavior:'smooth', block:'nearest' }); }, 100);
+
+  var prompt =
+    'You are ExplainBeta, a world-class teacher.\n' +
+    'Rules:\n' +
+    '1. Match the audience level exactly.\n' +
+    '2. Use the requested analogy consistently throughout — not just once.\n' +
+    (isAnim
+      ? '3. Format your response as exactly 5 SHORT paragraphs separated by blank lines.\n' +
+        '   Each paragraph = one scene and must explain only ONE idea.\n' +
+        '   Follow this story order: Setup, First Interaction, Repetition, Understanding Moment, Final Summary Trigger.\n' +
+        '   Keep each scene to 1-2 short sentences. No scene may mix multiple concepts.\n' +
+        '   Start each paragraph with its story label, like "Setup: ..."\n' +
+        '   The Final Summary Trigger paragraph is special: it must NOT introduce any new idea.\n' +
+        '   Instead, briefly tie Setup, First Interaction, Repetition, and Understanding Moment\n' +
+        '   together into one short recap sentence, then end with "Key Takeaway: [one sentence]"\n'
+      : '3. Structure: one core-idea sentence → 2-4 paragraphs → "Key Takeaway: ..."\n') +
+    '4. Never use jargon without explaining it immediately.\n' +
+    '5. Be warm and encouraging. Start directly — no "Great question!" or "Certainly!"\n\n' +
+    'Explain the following to ' + LEVELS[level] + '.\n' +
+    ANALOGIES[analogy] + '\n\n' +
+    'Topic:\n"""\n' + topic + '\n"""';
+
+  streamFromWorker(prompt)
+    .then(function(fullText) {
+      el.stream.style.display = 'none';
+      if (!fullText.trim()) { showErr('No response received. Please try again.'); setLoading(false); return; }
+      renderOutput(fullText.trim(), level, analogy, isAnim);
+    })
+    .catch(function(err) {
+      el.stream.style.display = 'none';
+      var m = err && err.message ? err.message : String(err);
+      if (!navigator.onLine) {
+        showErr('No internet. Check your connection and try again.');
+      } else if (/429|quota|rate/i.test(m)) {
+        showErr('This tool is getting a lot of use right now and hit its free rate limit.\nPlease wait about a minute and try again.');
+      } else if (/5\d\d/.test(m)) {
+        showErr('The AI service is temporarily unavailable. Please try again shortly.');
+      } else {
+        showErr('Error: ' + m + '\n\nPlease try again. If this keeps happening, the Worker endpoint in API_ENDPOINT may be misconfigured.');
+      }
+      setLoading(false);
+    });
+}
+
+// ── AI TRANSPORT ─────────────────────────────────────────────────────────────
+// Replace with your deployed Cloudflare Worker URL (see worker.js in this project).
+var API_ENDPOINT = 'https://explainbeta-proxy.oshesani00.workers.dev/';
+
+// Calls our Worker (which calls Gemini server-side, keeping the API key secret)
+// and reads back a Server-Sent-Events stream, updating the live preview as
+// chunks arrive. Resolves with the full assembled text.
+function streamFromWorker(prompt) {
+  return fetch(API_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: prompt })
+  }).then(function(res) {
+    if (!res.ok) {
+      return res.text().then(function(t) {
+        throw new Error('HTTP ' + res.status + (t ? ': ' + t : ''));
+      });
+    }
+    var reader  = res.body.getReader();
+    var decoder = new TextDecoder();
+    var buffer  = '';
+    var fullText = '';
+
+    function handleEvent(rawEvent) {
+      var lines = rawEvent.split('\n');
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (line.indexOf('data:') !== 0) continue;
+        var jsonStr = line.slice(5).trim();
+        if (!jsonStr || jsonStr === '[DONE]') continue;
+        try {
+          var obj  = JSON.parse(jsonStr);
+          var cand = obj.candidates && obj.candidates[0];
+          var part = cand && cand.content && cand.content.parts && cand.content.parts[0];
+          var chunk = part && part.text ? part.text : '';
+          if (chunk) { fullText += chunk; el.streamT.textContent = fullText; }
+        } catch (e) { /* partial/malformed SSE chunk — safe to skip */ }
+      }
+    }
+
+    function pump() {
+      return reader.read().then(function(result) {
+        if (result.done) {
+          if (buffer.trim()) handleEvent(buffer);
+          return fullText;
+        }
+        buffer += decoder.decode(result.value, { stream: true });
+        var events = buffer.split('\n\n');
+        buffer = events.pop(); // last (possibly incomplete) event stays buffered
+        events.forEach(handleEvent);
+        return pump();
+      });
+    }
+    return pump();
+  });
+}
+
+// ── RENDER OUTPUT ─────────────────────────────────────────────────────────────
+function renderOutput(text, level, analogy, isAnim) {
+  el.pills.innerHTML =
+    '<span class="pill">' + LEVEL_LABELS[level] + '</span>' +
+    '<span class="pill">' + ANALOGY_LABELS[analogy] + '</span>' +
+    (isAnim ? '<span class="pill">🎬 Animated</span>' : '');
+  el.meta.textContent = LEVEL_LABELS[level] + ' · ' + ANALOGY_LABELS[analogy];
+
+  if (isAnim) {
+    el.outTxt.style.display    = 'none';
+    el.player.style.display    = 'block';
+    sceneStart(text, analogy);
+  } else {
+    sceneStop();
+    el.outTxt.style.display    = '';
+    el.player.style.display    = 'none';
+    el.outTxt.textContent      = text;
+  }
+
+  el.out.style.display = 'block';
+  setLoading(false);
+  setTimeout(function() { el.out.scrollIntoView({ behavior:'smooth', block:'start' }); }, 60);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SCENE PLAYER
+// ═════════════════════════════════════════════════════════════════════════════
+var SC = { scenes:[], cur:0, timer:null, playing:false, analogy:'none', renderId:0 };
+var SC_TIMING = { entry:900, minRead:3000, maxRead:6000, transition:750 };
+var AUDIO = { ctx:null, utter:null, effectUntil:0 };
+
+function sceneStart(text, analogy) {
+  sceneStop();
+  SC.scenes  = parseScenes(text);
+  SC.cur     = 0;
+  SC.playing = true;
+  SC.analogy = analogy || 'none';
+  sceneRender();
+  sceneAutoPlay();
+}
+
+function parseScenes(text) {
+  var blocks = text.split(/\n\n+/).map(function(b){ return b.trim(); }).filter(Boolean);
+  if (blocks.length < 2) blocks = text.split(/\n/).map(function(b){ return b.trim(); }).filter(Boolean);
+  var pieces = [];
+  blocks.forEach(function(block) {
+    splitFocusedScene(block).forEach(function(part) { if (pieces.length < 7) pieces.push(part); });
+  });
+  if (!pieces.length) pieces = [{ title:'Setup', text:text.trim() }];
+  if (pieces.length > 6) pieces = pieces.slice(0, 6);
+  return shapeStoryScenes(pieces);
+}
+
+function firstSentence(text, idx) {
+  var m = text.match(/^[^.!?]{8,80}[.!?]/);
+  return m ? m[0].trim() : 'Scene ' + (idx + 1);
+}
+
+function splitFocusedScene(block) {
+  var clean = block.replace(/\s+/g,' ').trim();
+  var label = clean.match(/^(setup|first interaction|example|repetition|understanding moment|reinforcement|final summary trigger|final summary|summary|key takeaway)\s*:\s*/i);
+  if (label) clean = clean.slice(label[0].length).trim();
+  var isKey = /^key takeaway/i.test(clean);
+  clean = clean.replace(/^key takeaway[:\s]*/i,'').trim();
+  var sentences = clean.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [clean];
+  var grouped = [], current = '';
+  sentences.forEach(function(sentence) {
+    sentence = sentence.trim();
+    if (!sentence) return;
+    if (!current) current = sentence;
+    else if ((current + ' ' + sentence).length <= 210) current += ' ' + sentence;
+    else { grouped.push(current); current = sentence; }
+  });
+  if (current) grouped.push(current);
+  if (!grouped.length) grouped.push(clean);
+  return grouped.map(function(body, i) {
+    return { title:isKey ? 'Key Takeaway' : (label && i === 0 ? storyTitle(label[1]) : ''), text:body };
+  });
+}
+
+function storyTitle(label) {
+  label = String(label || '').toLowerCase();
+  if (label === 'example') return 'First Interaction';
+  if (label === 'reinforcement') return 'Understanding Moment';
+  if (label === 'key takeaway' || label === 'summary') return 'Final Summary';
+  return label.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+}
+
+function shapeStoryScenes(pieces) {
+  var labels = ['Setup','First Interaction','Repetition','Understanding Moment','Final Summary Trigger'];
+  return pieces.map(function(piece, i) {
+    var title = piece.title || labels[Math.min(i, labels.length - 1)] || firstSentence(piece.text, i);
+    if (/key takeaway/i.test(title)) title = 'Final Summary';
+    return { step:labels[Math.min(i, labels.length - 1)] || ('Scene '+(i+1)), title:title, text:piece.text };
+  });
+}
+
+function sceneRender() {
+  var total = SC.scenes.length;
+  var i     = SC.cur;
+  var s     = SC.scenes[i];
+  SC.renderId++;
+
+  var counterTxt = 'Scene ' + (i+1) + ' of ' + total;
+  var pct        = Math.round((i+1)/total*100) + '%';
+  var playIcon   = SC.playing ? '\u23F8' : '\u25B6';
+  [el.counter, el.focusCounter].forEach(function(node){ node.textContent = counterTxt; });
+  [el.bar, el.focusBar].forEach(function(node){ node.style.width = pct; });
+  [el.prev, el.focusPrev].forEach(function(node){ node.disabled = (i === 0); });
+  [el.next, el.focusNext].forEach(function(node){ node.disabled = (i === total - 1); });
+  [el.play, el.focusPlay].forEach(function(node){ node.textContent = playIcon; });
+
+  var sceneHTML =
+    '<div class="scene-svg-wrap">' + pickSVG(s.text + ' ' + s.title, SC.analogy, i) + '</div>' +
+    '<div class="scene-step">'    + esc(s.step)  + '</div>' +
+    '<div class="scene-title">'   + esc(s.title) + '</div>' +
+    '<div class="scene-text">'    + esc(s.text)  + '</div>';
+
+  [el.wrap, el.focusWrap].forEach(function(wrap){ paintSceneCrossfade(wrap, sceneHTML); });
+  if (audioEffectsOn()) playEffect('enter');
+}
+
+// Crossfades the outgoing scene out while the new one fades/rises in, instead
+// of an instant innerHTML swap — makes the story feel like it's advancing
+// rather than flickering to a new slide.
+function paintSceneCrossfade(wrap, html) {
+  var outgoing = wrap.querySelector('.scene.active');
+  if (outgoing) {
+    outgoing.classList.remove('active');
+    outgoing.classList.add('leaving');
+    setTimeout(function() { if (outgoing.parentNode === wrap) wrap.removeChild(outgoing); }, 380);
+  }
+  var div = document.createElement('div');
+  div.className = 'scene active';
+  div.innerHTML = html;
+  wrap.appendChild(div);
+}
+
+function sceneGo(idx) {
+  if (idx < 0 || idx >= SC.scenes.length) return;
+  playEffect('click');
+  SC.cur = idx; sceneStop(); SC.playing = false;
+  el.play.textContent = '\u25B6';
+  sceneRender();
+}
+
+function sceneAutoPlay() {
+  sceneStop();
+  var id = SC.renderId;
+  var s = SC.scenes[SC.cur];
+  var readMs = sceneReadTime(s);
+  var start = Date.now();
+  var afterNarration = function() {
+    if (!SC.playing || id !== SC.renderId) return;
+    var elapsed = Date.now() - start;
+    var remaining = Math.max(SC_TIMING.minRead, readMs) - elapsed;
+    remaining = Math.max(0, Math.min(remaining, SC_TIMING.maxRead));
+    SC.timer = setTimeout(sceneAdvance, remaining + SC_TIMING.transition);
+  };
+  SC.timer = setTimeout(function() {
+    if (!SC.playing || id !== SC.renderId) return;
+    if (audioNarrationOn()) narrateScene(s, afterNarration);
+    else afterNarration();
+  }, SC_TIMING.entry);
+}
+
+function sceneAdvance() {
+  if (SC.cur < SC.scenes.length - 1) {
+    SC.cur++;
+    sceneRender();
+    sceneAutoPlay();
+  } else {
+    playEffect('ding');
+    sceneStop(); SC.playing = false; el.play.textContent = '\u25B6';
+  }
+}
+
+function sceneStop() {
+  if (SC.timer) { clearTimeout(SC.timer); SC.timer = null; }
+  stopNarration();
+}
+function sceneTogglePlay() {
+  playEffect('click');
+  SC.playing = !SC.playing;
+  el.play.textContent    = SC.playing ? '\u23F8' : '\u25B6';
+  if (SC.playing) sceneAutoPlay(); else sceneStop();
+}
+
+function sceneReadTime(scene) {
+  var words = ((scene.title || '') + ' ' + (scene.text || '')).trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(SC_TIMING.minRead, Math.min(SC_TIMING.maxRead, words * 420));
+}
+
+function sceneAudioChanged() {
+  stopNarration();
+  if (SC.playing) sceneAutoPlay();
+}
+
+function audioMode() { return el.audio ? el.audio.value : 'off'; }
+function audioNarrationOn() { var m = audioMode(); return m === 'narration' || m === 'both'; }
+function audioEffectsOn() { var m = audioMode(); return m === 'effects' || m === 'both'; }
+
+function narrateScene(scene, done) {
+  if (!('speechSynthesis' in window)) { done(); return; }
+  stopNarration();
+  // Narrate only the real explanation — the on-screen step label (Setup /
+  // First Interaction / Repetition...) is a visual scaffold for the eyes,
+  // not something the learner needs read aloud before the content itself.
+  var utter = new SpeechSynthesisUtterance(scene.text);
+  AUDIO.utter = utter;
+  utter.rate = 0.88;
+  utter.pitch = 1;
+  utter.volume = 0.88;
+  utter.onend = function() { if (AUDIO.utter === utter) AUDIO.utter = null; done(); };
+  utter.onerror = function() { if (AUDIO.utter === utter) AUDIO.utter = null; done(); };
+  window.speechSynthesis.speak(utter);
+}
+
+function stopNarration() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  AUDIO.utter = null;
+}
+
+function playEffect(kind) {
+  if (!audioEffectsOn()) return;
+  var now = performance.now();
+  if (now < AUDIO.effectUntil) return;
+  AUDIO.effectUntil = now + 180;
+  try {
+    var ctx = AUDIO.ctx || (AUDIO.ctx = new (window.AudioContext || window.webkitAudioContext)());
+    if (ctx.state === 'suspended') ctx.resume();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    var cfg = kind === 'ding' ? [880, 1320, .18] : kind === 'click' ? [420, 360, .055] : [260, 520, .12];
+    osc.type = kind === 'ding' ? 'sine' : 'triangle';
+    osc.frequency.setValueAtTime(cfg[0], ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(cfg[1], ctx.currentTime + cfg[2]);
+    gain.gain.setValueAtTime(.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(kind === 'ding' ? .08 : .035, ctx.currentTime + .015);
+    gain.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + cfg[2]);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + cfg[2] + .02);
+  } catch (e) {}
+}
+// SVG ILLUSTRATION ENGINE
+// Pure CSS stroke-dashoffset draw-on animation — zero libraries, zero cost.
+// Each SVG is a standalone 280×170 illustration that draws itself on screen.
+// ═════════════════════════════════════════════════════════════════════════════
+var C = {
+  blue:'#2563EB',blueL:'#DBEAFE',blueLL:'#EFF6FF',
+  green:'#10B981',greenL:'#D1FAE5',text:'#0F172A',
+  muted:'#94A3B8',border:'#E2E8F0',white:'#FFFFFF',
+  amber:'#F59E0B',amberL:'#FEF3C7',red:'#EF4444'
+};
+
+function s(inner){ return '<svg viewBox="0 0 280 170" width="260" height="170" xmlns="http://www.w3.org/2000/svg">' + inner + '</svg>'; }
+function draw(d,len,dur,delay,stroke,sw){ return '<path class="draw" style="--len:'+len+';--dur:'+dur+'s;--delay:'+delay+'s" d="'+d+'" stroke="'+(stroke||C.blue)+'" stroke-width="'+(sw||2.5)+'"/>'; }
+function drawLine(x1,y1,x2,y2,len,dur,delay,stroke,sw){ return '<line class="draw" style="--len:'+len+';--dur:'+dur+'s;--delay:'+delay+'s" x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+(stroke||C.blue)+'" stroke-width="'+(sw||2.5)+'" stroke-linecap="round"/>'; }
+function drawCircle(cx,cy,r,len,dur,delay,stroke,sw){ return '<circle class="draw" style="--len:'+len+';--dur:'+dur+'s;--delay:'+delay+'s" cx="'+cx+'" cy="'+cy+'" r="'+r+'" stroke="'+(stroke||C.blue)+'" stroke-width="'+(sw||2.5)+'"/>'; }
+function drawRect(x,y,w,h,rx,len,dur,delay,stroke,sw){ return '<rect class="draw" style="--len:'+len+';--dur:'+dur+'s;--delay:'+delay+'s" x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="'+(rx||3)+'" stroke="'+(stroke||C.blue)+'" stroke-width="'+(sw||2.5)+'"/>'; }
+function fadeIn(svg,delay,dur){ return svg.replace('<','<g class="float-up" style="--fdelay:'+delay+'s;--fdur:'+(dur||'.4')+'s">').replace(/(<\/[a-z]+>)$/, '$1</g>'); }
+function txt(x,y,content,size,fill,weight){ return '<text x="'+x+'" y="'+y+'" text-anchor="middle" font-size="'+(size||13)+'" fill="'+(fill||C.blue)+'" font-weight="'+(weight||'600')+'" font-family="system-ui,sans-serif" class="float-up" style="--fdelay:.6s;--fdur:.4s">' + content + '</text>'; }
+
+function activeCls(on) { return on ? ' world-active' : ''; }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// CONTENT-AWARE, PROGRESSIVE SCENE ENGINE
+// Each analogy is a "world": a fixed background stage + an ordered list of
+// entities. As the story advances, entities reveal one at a time (the picture
+// visibly builds scene-to-scene, instead of showing everything from frame 1).
+// Whichever entity's keywords match THIS scene's own text gets the highlight
+// glow — not a fixed idx%5 rotation — so the illustration actually tracks
+// what the explanation is saying. Falls back to positional order if no
+// keyword hits (e.g. very short or abstract scene text).
+// ═════════════════════════════════════════════════════════════════════════════
+
+function pickActiveIndex(text, entities, fallbackIdx) {
+  // Score every entity by how many of its keywords appear, instead of
+  // returning on the first hit — a scene that happens to contain one word
+  // from entity 1 but three words from entity 3 should highlight entity 3.
+  var bestIdx = -1, bestScore = 0;
+  for (var i = 0; i < entities.length; i++) {
+    var kws = entities[i].keywords || [];
+    var score = 0;
+    for (var j = 0; j < kws.length; j++) {
+      if (text.indexOf(kws[j]) !== -1) score++;
+    }
+    if (score > bestScore) { bestScore = score; bestIdx = i; }
+  }
+  return bestScore > 0 ? bestIdx : Math.min(fallbackIdx, entities.length - 1);
+}
+
+function renderWorld(def, idx, rawText) {
+  var text = String(rawText || '').toLowerCase();
+  var n = def.entities.length;
+  var revealCount = Math.min(idx + 1, n);
+  var activeIndex = pickActiveIndex(text, def.entities, idx);
+  if (activeIndex >= revealCount) activeIndex = revealCount - 1; // never glow an entity that isn't on screen yet
+  var out = '<rect width="280" height="170" fill="' + def.bg + '" rx="8"/>' +
+            '<g class="' + (def.camera || 'world-camera') + '">' +
+            (def.stage ? def.stage() : '');
+  for (var i = 0; i < n; i++) {
+    if (i >= revealCount) continue;
+    var e = def.entities[i];
+    out += e.svg(i === activeIndex, e.delay);
+    if (e.label) out += txt(e.labelX, e.labelY, e.label, e.labelSize || 9, e.labelColor || C.blue, '700');
+  }
+  if (def.connectors) out += def.connectors(revealCount, activeIndex);
+  out += '</g>';
+  return s(out);
+}
+
+function pickSVG(text, analogy, idx) {
+  var def = WORLDS[analogy] || WORLDS.none;
+  return renderWorld(def, idx, text);
+}
+
+var WORLDS = {
+
+  none: {
+    bg: C.blueLL,
+    entities: [
+      { keywords:['setup','start','begin','first','intro','introduce','opening','origin','initial'], delay:.2,
+        svg: function(a,d){ return drawCircle(70,86,18,120,.6,d,C.blue,2) +
+          '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+(d+.2)+'s" cx="70" cy="86" r="9" fill="'+C.blue+'"/>'; } },
+      { keywords:['function','process','step','next','then','middle','build','develop','continue','logic','forms'], delay:.35,
+        svg: function(a,d){ return drawCircle(140,86,26,170,.7,d,C.green,2) +
+          '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+(d+.2)+'s" x="126" y="72" width="28" height="28" rx="7" fill="'+C.green+'"/>'; } },
+      { keywords:['result','output','final','end','outcome','takeaway','understand','therefore','conclude','realize','overall'], delay:.5,
+        svg: function(a,d){ return drawCircle(214,86,18,120,.6,d,C.amber,2) +
+          '<path class="world-entity'+activeCls(a)+'" style="--delay:'+(d+.2)+'s" d="M214 73 L227 98 L201 98Z" fill="'+C.amber+'"/>'; } }
+    ],
+    connectors: function(revealCount) {
+      var out = '';
+      if (revealCount >= 2) out += '<line class="world-flow" style="--delay:.7s" x1="92" y1="86" x2="112" y2="86" stroke="'+C.blue+'" stroke-width="2.5" stroke-linecap="round"/>';
+      if (revealCount >= 3) out += '<line class="world-flow" style="--delay:.9s" x1="168" y1="86" x2="192" y2="86" stroke="'+C.green+'" stroke-width="2.5" stroke-linecap="round"/>' + txt(140,138,'CLEAR IDEA FLOW',11,C.blue,'800');
+      return out;
+    }
+  },
+
+  house: {
+    bg: '#EFF6FF',
+    stage: function(){
+      return '<rect class="world-entity" style="--delay:.05s" x="42" y="62" width="196" height="82" rx="5" fill="'+C.white+'" stroke="'+C.blue+'" stroke-width="2.5"/>' +
+        '<polyline class="draw" style="--len:310;--dur:.85s;--delay:.15s" points="32,64 140,20 248,64" stroke="'+C.blue+'" stroke-width="2.5" stroke-linejoin="round" fill="none"/>';
+    },
+    entities: [
+      { keywords:['room','start','begin','setup','foundation','first','introduce','origin','initial'], delay:.35, label:'ROOM', labelX:80, labelY:119, labelColor:C.blue,
+        svg: function(a,d){ return '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" x="58" y="82" width="42" height="46" rx="4" fill="'+C.blueLL+'" stroke="'+C.blue+'" stroke-width="1.6"/>'; } },
+      { keywords:['function','process','step','second','next','then','develop','continue','logic','connects'], delay:.5, label:'HALL', labelX:140, labelY:119, labelColor:C.green,
+        svg: function(a,d){ return '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" x="119" y="82" width="42" height="46" rx="4" fill="'+C.greenL+'" stroke="'+C.green+'" stroke-width="1.6"/>'; } },
+      { keywords:['output','result','final','end','outcome','third','therefore','conclude','realize','overall'], delay:.65, label:'PORCH', labelX:201, labelY:119, labelColor:C.amber,
+        svg: function(a,d){ return '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" x="180" y="82" width="42" height="46" rx="4" fill="'+C.amberL+'" stroke="'+C.amber+'" stroke-width="1.6"/>'; } },
+      { keywords:['door','connect','link','together','combine','pathway','flow','bridge','join','unite'], delay:.8,
+        svg: function(a,d){ return '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" x="132" y="110" width="18" height="34" rx="3" fill="'+C.blue+'" opacity=".9"/>' +
+          '<circle class="world-loop" style="--delay:1s" cx="151" cy="126" r="2.7" fill="'+C.amber+'"/>'; } }
+    ],
+    connectors: function(revealCount){
+      return revealCount >= 3 ? '<path class="world-flow" style="--delay:1s" d="M80 105 C104 74 124 74 140 105 S177 136 202 105" stroke="'+C.blue+'" stroke-width="2.4" fill="none" stroke-linecap="round"/>' : '';
+    }
+  },
+
+  football: {
+    bg: '#15803D', camera: 'world-pan',
+    stage: function(){
+      return drawRect(18,18,244,134,3,520,.8,.05,'rgba(255,255,255,.55)',1.5) +
+        drawLine(140,18,140,152,140,.4,.25,'rgba(255,255,255,.45)',1.4) +
+        drawCircle(140,85,32,210,.55,.35,'rgba(255,255,255,.45)',1.4);
+    },
+    entities: [
+      { keywords:['coach','setup','start','begin','plan','strategy','introduce','organizes','prepares'], delay:.25, label:'COACH', labelX:48, labelY:118, labelColor:'white',
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="48" cy="126" r="13" fill="'+C.amber+'" stroke="white" stroke-width="1.5"/>' +
+          '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+(d+.05)+'s" x="36" y="139" width="24" height="10" rx="3" fill="'+C.amberL+'"/>'; } },
+      { keywords:['pass','first','build','team play','attack','develop','moves','advances'], delay:.45,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="94" cy="70" r="8" fill="#FBBF24" stroke="white" stroke-width="1.4"/>'; } },
+      { keywords:['midfield','second','develop','support','build up','connects','link','transition'], delay:.6,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="146" cy="100" r="8" fill="#FBBF24" stroke="white" stroke-width="1.4"/>'; } },
+      { keywords:['defend','opponent','challenge','block','third','obstacle','difficulty','problem'], delay:.75,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="198" cy="70" r="8" fill="#60A5FA" stroke="white" stroke-width="1.4"/>'; } },
+      { keywords:['goal','score','final','win','result','shoot','therefore','conclude','achieve'], delay:.9,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="232" cy="100" r="8" fill="#60A5FA" stroke="white" stroke-width="1.4"/>' +
+          '<g class="bounce-in" style="--delay:'+(d+.1)+'s"><circle cx="232" cy="88" r="9" fill="white" stroke="#1E293B" stroke-width="1"/></g>'; } }
+    ],
+    connectors: function(revealCount){
+      return revealCount >= 3 ? '<path class="world-flow" style="--delay:.95s" d="M94 70 C116 50 128 112 146 100 S176 50 198 70 S218 93 232 100" stroke="white" stroke-width="2.3" fill="none" stroke-linecap="round"/>' : '';
+    }
+  },
+
+  gaming: {
+    bg: '#1E1B4B',
+    stage: function(){ return '<rect class="world-entity" style="--delay:.1s" x="32" y="120" width="216" height="16" rx="4" fill="#312E81"/>' + txt(140,35,'LEVEL FLOW',12,'#C7D2FE','800'); },
+    entities: [
+      { keywords:['player','start','spawn','begin','character','introduce','initial','origin'], delay:.25,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="48" cy="106" r="13" fill="#F59E0B"/>' +
+          '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+(d+.05)+'s" x="40" y="116" width="16" height="16" rx="3" fill="#FBBF24"/>'; } },
+      { keywords:['level','first','platform','early','easy','develop','begins','foundation'], delay:.35,
+        svg: function(a,d){ return '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" x="68" y="90" width="36" height="30" rx="4" fill="#4338CA" stroke="#A5B4FC" stroke-width="1.5"/>'; } },
+      { keywords:['second','challenge','harder','next','difficulty','obstacle','problem'], delay:.5,
+        svg: function(a,d){ return '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" x="122" y="72" width="36" height="48" rx="4" fill="#4338CA" stroke="#A5B4FC" stroke-width="1.5"/>'; } },
+      { keywords:['third','advanced','tough','boss','complex','difficult','struggle'], delay:.65,
+        svg: function(a,d){ return '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" x="176" y="54" width="36" height="66" rx="4" fill="#4338CA" stroke="#A5B4FC" stroke-width="1.5"/>'; } },
+      { keywords:['checkpoint','save','complete','finish','result','win'], delay:.85, label:'SAVE', labelX:235, labelY:76, labelColor:'white', labelSize:9,
+        svg: function(a,d){ return '<rect class="world-loop'+activeCls(a)+'" style="--delay:'+d+'s" x="222" y="58" width="26" height="26" rx="6" fill="#10B981"/>'; } }
+    ],
+    connectors: function(revealCount){
+      return revealCount >= 3 ? '<path class="world-flow" style="--delay:.8s" d="M58 106 C82 70 103 124 128 96 S166 70 185 74 S210 100 232 74" stroke="#A5B4FC" stroke-width="2.4" fill="none"/>' : '';
+    }
+  },
+
+  school: {
+    bg: '#F1F5F9',
+    stage: function(){ return '<rect class="world-entity" style="--delay:.1s" x="28" y="24" width="126" height="72" rx="5" fill="#15803D" stroke="#1E293B" stroke-width="2"/>' + txt(91,64,'BOARD',13,'white','800'); },
+    entities: [
+      { keywords:['teacher','explain','start','begin','lesson','introduce','origin','initial','presents'], delay:.35,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="204" cy="56" r="15" fill="#FED7AA" stroke="'+C.amber+'" stroke-width="1.5"/>' +
+          drawLine(204,72,204,112,45,.4,d+.2,C.blue,2.5) + drawLine(204,84,178,70,34,.3,d+.4,C.blue,2) + drawLine(204,84,232,70,36,.3,d+.5,C.blue,2); } },
+      { keywords:['student','practice','first','learn','listen','develop','absorbs','engages'], delay:.8,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="72" cy="124" r="10" fill="#BFDBFE" stroke="'+C.blue+'" stroke-width="1.4"/>'; } },
+      { keywords:['second','discuss','group','together','connects','collaborate','link'], delay:.95,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="122" cy="124" r="10" fill="#BFDBFE" stroke="'+C.blue+'" stroke-width="1.4"/>'; } },
+      { keywords:['third','apply','test','exercise','difficulty','challenge','problem'], delay:1.1,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="172" cy="124" r="10" fill="#BFDBFE" stroke="'+C.blue+'" stroke-width="1.4"/>'; } },
+      { keywords:['bell','end','final','summary','result','done','finish','therefore','conclude','realize'], delay:1.2,
+        svg: function(a,d){ return '<g class="world-bell'+activeCls(a)+'" style="--delay:'+d+'s"><path d="M236 28 Q250 38 246 56 L226 56 Q222 38 236 28Z" fill="'+C.amber+'" stroke="'+C.amber+'" stroke-width="1.4"/><circle cx="236" cy="61" r="4" fill="'+C.red+'"/></g>'; } }
+    ],
+    connectors: function(revealCount){
+      return revealCount >= 4 ? '<path class="world-flow" style="--delay:1.05s" d="M72 106 C94 88 123 88 145 106 S190 126 216 103" stroke="'+C.blue+'" stroke-width="2.2" fill="none"/>' : '';
+    }
+  },
+
+  cooking: {
+    bg: '#FFF7ED', camera: 'world-pan',
+    stage: function(){
+      return '<rect class="world-entity" style="--delay:.1s" x="36" y="34" width="58" height="82" rx="5" fill="'+C.white+'" stroke="'+C.amber+'" stroke-width="1.8"/>' +
+        txt(65,60,'RECIPE',9,C.amber,'800') + drawLine(50,76,80,76,35,.2,.45,C.amber,1.4) + drawLine(50,94,80,94,35,.2,.55,C.amber,1.4);
+    },
+    entities: [
+      { keywords:['ingredient','prep','first','start','chop','introduce','initial','origin'], delay:.35,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="126" cy="52" r="13" fill="'+C.greenL+'" stroke="'+C.green+'" stroke-width="1.5"/>'; } },
+      { keywords:['second','mix','combine','stir','develop','continues','blends'], delay:.5,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="158" cy="48" r="12" fill="'+C.amberL+'" stroke="'+C.amber+'" stroke-width="1.5"/>'; } },
+      { keywords:['third','add','spice','flavor','complex','difficulty','nuance'], delay:.65,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="190" cy="54" r="12" fill="#FCE7F3" stroke="#EC4899" stroke-width="1.5"/>'; } },
+      { keywords:['cook','heat','pot','pan','boil','bake','simmer','develops','transforms','continues'], delay:.85,
+        svg: function(a,d){ return '<ellipse class="draw" style="--len:190;--dur:.65s;--delay:'+d+'s" cx="164" cy="118" rx="48" ry="14" stroke="'+C.blue+'" stroke-width="2.5" fill="none"/>' +
+          '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+(d+.15)+'s" x="116" y="94" width="96" height="32" rx="5" fill="'+C.blueLL+'" stroke="'+C.blue+'" stroke-width="2"/>'; } },
+      { keywords:['dish','result','serve','final','done','ready','meal','therefore','conclude','achieve'], delay:1.1,
+        svg: function(a,d){ return '<path class="world-loop'+activeCls(a)+'" style="--delay:'+d+'s" d="M145 87 C158 76 178 76 190 88" stroke="'+C.red+'" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
+          '<ellipse class="world-entity'+activeCls(a)+'" style="--delay:'+(d+.1)+'s" cx="232" cy="126" rx="22" ry="9" fill="'+C.green+'" opacity=".85"/>'; } }
+    ],
+    connectors: function(revealCount){
+      return revealCount >= 4 ? '<path class="world-flow" style="--delay:1.05s" d="M126 66 C132 82 150 82 158 66 M190 68 C182 84 170 84 164 94" stroke="'+C.amber+'" stroke-width="2.2" fill="none" stroke-linecap="round"/>' : '';
+    }
+  },
+
+  life: {
+    bg: '#F0FDF4',
+    stage: function(){ return '<rect class="world-entity" style="--delay:.1s" x="24" y="126" width="232" height="18" rx="6" fill="'+C.greenL+'"/>'; },
+    entities: [
+      { keywords:['home','morning','start','begin','wake','introduce','initial','origin'], delay:.25,
+        svg: function(a,d){ return '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" x="44" y="70" width="42" height="56" rx="4" fill="'+C.white+'" stroke="'+C.muted+'" stroke-width="1.5"/>'; } },
+      { keywords:['work','job','office','task','duty','develop','continues','routine'], delay:.45,
+        svg: function(a,d){ return '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" x="116" y="86" width="48" height="34" rx="5" fill="'+C.amberL+'" stroke="'+C.amber+'" stroke-width="1.5"/>'; } },
+      { keywords:['shop','errand','store','buy','obstacle','task','handle'], delay:.65,
+        svg: function(a,d){ return '<rect class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" x="190" y="76" width="42" height="50" rx="4" fill="'+C.blueLL+'" stroke="'+C.blue+'" stroke-width="1.5"/>'; } },
+      { keywords:['friend','social','meet','talk','interact','connect','bond','share'], delay:.85,
+        svg: function(a,d){ return '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+d+'s" cx="96" cy="112" r="10" fill="'+C.blue+'"/>' +
+          '<circle class="world-entity'+activeCls(a)+'" style="--delay:'+(d+.1)+'s" cx="178" cy="112" r="10" fill="'+C.green+'"/>'; } },
+      { keywords:['evening','result','end','summary','complete','finish','therefore','conclude','realize'], delay:1.2, label:'EVERYDAY STORY', labelX:140, labelY:154, labelColor:C.green, labelSize:11,
+        svg: function(a,d){ return '<circle class="world-loop'+activeCls(a)+'" style="--delay:'+d+'s" cx="232" cy="42" r="17" fill="'+C.amber+'" opacity=".9"/>'; } }
+    ],
+    connectors: function(revealCount){
+      return revealCount >= 4 ? '<path class="world-flow" style="--delay:1.05s" d="M64 100 C92 62 120 134 144 103 S194 68 212 101" stroke="'+C.blue+'" stroke-width="2.4" fill="none" stroke-linecap="round"/>' : '';
+    }
+  }
+};
+
+// ── DEV SELF-TEST ────────────────────────────────────────────────────────────
+// parseScenes() is the part of this app most likely to break in weird ways,
+// since it's regex-parsing semi-structured LLM output that isn't guaranteed
+// to follow the requested format. There's no build/test tooling for a
+// single-file static app like this, so instead: run
+// window.__testParseScenes() in the browser console after any change to
+// parseScenes/splitFocusedScene/shapeStoryScenes to sanity-check a few
+// representative fixtures (well-formed, missing labels, single blob, no
+// "Key Takeaway:") all still produce a non-empty, correctly-labeled scene list.
+window.__testParseScenes = function() {
+  var fixtures = [
+    {
+      name: 'well-formed 5-paragraph response',
+      text: 'Setup: A house needs a strong foundation before anything else.\n\n' +
+            'First Interaction: The plumber connects the pipes to the water supply.\n\n' +
+            'Repetition: Every room repeats this same connection pattern.\n\n' +
+            'Understanding Moment: Now you see how each room links back to one source.\n\n' +
+            'Final Summary Trigger: The whole house works because of this shared system. Key Takeaway: Plumbing is one connected network, not separate rooms.'
+    },
+    { name: 'missing story labels', text: 'A function takes an input.\n\nIt processes that input.\n\nIt returns an output. Key takeaway: functions transform inputs into outputs.' },
+    { name: 'single unbroken blob (no blank lines)', text: 'This is one long paragraph with no scene breaks at all that still needs to become at least one scene so the player never renders empty.' },
+    { name: 'no Key Takeaway line at all', text: 'Setup: Something begins.\n\nFirst Interaction: Something happens.\n\nFinal Summary Trigger: Something concludes.' }
+  ];
+  var pass = 0;
+  fixtures.forEach(function(f) {
+    var scenes = parseScenes(f.text);
+    var ok = Array.isArray(scenes) && scenes.length > 0 &&
+      scenes.every(function(sc){ return sc && typeof sc.text === 'string' && sc.text.trim().length > 0; });
+    console[ok ? 'log' : 'error']((ok ? '✓ ' : '✗ ') + f.name + ' → ' + scenes.length + ' scene(s)', scenes);
+    if (ok) pass++;
+  });
+  console.log(pass + ' / ' + fixtures.length + ' fixtures passed');
+  return pass === fixtures.length;
+};
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function copyText() {
+  var text = el.outTxt.textContent || SC.scenes.map(function(s){ return s.title+'\n'+s.text; }).join('\n\n');
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(flashCopy).catch(function() {
+    var ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta); flashCopy();
+  });
+}
+function flashCopy() {
+  el.copy.textContent='✓ Copied!'; el.copy.classList.add('ok');
+  setTimeout(function(){ el.copy.textContent='📋 Copy'; el.copy.classList.remove('ok'); }, 2000);
+}
+
+function clearAll() {
+  exitFocusMode();
+  sceneStop(); SC.scenes=[]; SC.cur=0; SC.playing=false;
+  el.topic.value=''; el.char.textContent='0 / 3000'; el.char.className='char';
+  el.out.style.display='none'; el.stream.style.display='none';
+  el.player.style.display='none'; el.outTxt.style.display='';
+  hideErr(); window.scrollTo({top:0,behavior:'smooth'}); el.topic.focus();
+}
+
+function setLoading(on) {
+  el.btn.disabled=on; el.btnTxt.textContent=on?'Thinking…':'✦ Explain It';
+  el.spin.style.display=on?'block':'none';
+}
+function showErr(msg){ el.err.textContent=msg; el.err.style.display='block'; }
+function hideErr(){ el.err.style.display='none'; }
+</script>
+</body>
+</html>
