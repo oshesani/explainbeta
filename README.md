@@ -177,15 +177,7 @@ AI was used as a development accelerator while I remained responsible for:
 
 ### ExplainBeta Interface
 
-Add project screenshot here.
-
-For example:
-
-```text
 ![ExplainBeta Interface](./screenshots/explainbeta-interface.png)
-```
-
----
 
 ## Current Status
 
